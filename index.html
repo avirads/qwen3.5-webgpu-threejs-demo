@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Qwen3 WebGPU - 3D Interface</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=JetBrains+Mono:wght@300;500&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app">
+      <!-- WebGL Canvas -->
+      <canvas id="three-canvas"></canvas>
+      
+      <!-- CSS3D Container -->
+      <div id="css3d-container"></div>
+
+      <!-- Loading Screen (remains normal DOM for initial load) -->
+      <div id="loading-screen">
+        <div class="loader-container">
+          <div class="loader"></div>
+          <div class="loader-ring"></div>
+        </div>
+        <p id="loading-text">Initializing WebGPU...</p>
+        <div class="progress-bar">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="loading-percentage">0%</div>
+      </div>
+
+      <!-- Hidden template for 3D interface -->
+      <div id="interface-template" style="display: none;">
+        <div class="glass-panel">
+          <header>
+            <h1>QWEN<span>3.5</span></h1>
+            <div id="status">Initializing...</div>
+          </header>
+
+          <div id="chat-container">
+            <div id="messages"></div>
+          </div>
+
+          <div id="input-area">
+            <div class="input-wrapper">
+              <textarea id="prompt-input" placeholder="Type a message..." rows="1" autofocus></textarea>
+              <button id="send-btn" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M1.946 9.315c-.522-.174-.527-.455.01-.634l19.087-6.362c.529-.176.832.12.684.638l-5.454 19.086c-.15.529-.455.547-.679.045L12 14l6-8-8 6-3.054-2.685z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
