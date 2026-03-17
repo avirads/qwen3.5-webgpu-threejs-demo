@@ -5,75 +5,86 @@ import {
     env,
 } from "@huggingface/transformers";
 
-// Detection of built/production environment
-// @ts-ignore - Vite will replace this at build time
+// --- CONFIGURATION ---
+// Always use the full repository ID as the key for consistent caching
+const MODEL_ID = "onnx-community/Qwen3.5-0.8B-ONNX";
+
+// Enable browser-side persistent caching (Cache API)
+env.useBrowserCache = true;
+
+// Detection of environment
 const IS_PROD = import.meta.env.MODE === 'production';
 
-// In production (GitHub Pages), we fetch from Hugging Face Hub directly
-// In development, we use the local files served from /models/
-const MODEL_ID = IS_PROD ? "onnx-community/Qwen3.5-0.8B-ONNX" : "qwen3.5-0.8b";
-
-// CONFIGURE TRANSFORMERS.JS
+/**
+ * Configure Transformers.js to prioritize local files if available, 
+ * but allow remote download for the first-time setup.
+ */
 if (IS_PROD) {
+    // In Production (GitHub Pages/Dist):
+    // We allow remote models so it can download from HF Hub the 1st time.
+    // Subsequent visits will load from the browser's Cache API automatically.
     env.allowRemoteModels = true;
-    env.allowLocalModels = false; // Prevents looking in the 'dist' folder for weights on GitHub Pages
+    env.allowLocalModels = false; 
 } else {
+    // In Development:
+    // We prefer the local /public/models/ folder for speed and offline dev.
     env.allowRemoteModels = false;
     env.allowLocalModels = true;
-    env.localModelPath = '/models/'; // Path relative to public root in dev
+    env.localModelPath = '/models/'; 
 }
 
-/** @type {AutoModelForCausalLM} */
 let model: any = null;
-/** @type {AutoTokenizer} */
 let tokenizer: any = null;
 
 const progressCallback = (data: any) => {
+    // Only send progress if it's actually downloading or loading
     self.postMessage({ type: "progress", ...data });
 };
 
 async function load() {
     try {
-        console.log(`Worker: Loading Qwen 3.5 (${IS_PROD ? 'Hub' : 'Local'})...`);
+        const source = IS_PROD ? "Browser Cache / Cloud" : "Local Project Files";
+        console.log(`Worker: Initializing Qwen 3.5 (Source: ${source})...`);
+        
         self.postMessage({ 
             type: "progress", 
             status: "init", 
-            message: IS_PROD ? "Fetching model from Cloud..." : "Loading project engine..." 
+            message: "Verifying local engine cache..." 
         });
 
         if (!(navigator as any).gpu) {
             throw new Error("WebGPU is not supported by your browser in this context.");
         }
 
-        console.log("Worker: Initializing tokenizer...");
+        // Initialize Tokenizer
+        // Transformers.js will automatically check the browser's Cache API first.
         tokenizer = await AutoTokenizer.from_pretrained(MODEL_ID, {
             progress_callback: progressCallback,
         });
 
-        console.log("Worker: Initializing model (WebGPU)...");
+        // Initialize Model (WebGPU)
+        // If the 600MB+ files are already in indexedDB/Cache, this will be nearly instant.
         model = await AutoModelForCausalLM.from_pretrained(MODEL_ID, {
             device: "webgpu",
             dtype: "q4f16", 
             progress_callback: progressCallback,
         });
 
-        console.log("Worker: Qwen 3.5 ready!");
+        console.log("Worker: Engine operational.");
         self.postMessage({ type: "ready" });
     } catch (error: any) {
-        console.error("Worker Error details:", error);
+        console.error("Worker Error:", error);
         self.postMessage({ 
             type: "progress", 
             status: "error", 
-            message: `Engine Error: ${error.message || "Unknown error occurred"}` 
+            message: `Engine Error: ${error.message}` 
         });
     }
 }
 
 async function generate(messages: any[]) {
     try {
-        if (!model || !tokenizer) {
-            throw new Error("Model not ready");
-        }
+        if (!model || !tokenizer) throw new Error("Model not ready");
 
         const input_ids = await tokenizer.apply_chat_template(messages, {
             add_generation_prompt: true,
@@ -86,9 +97,7 @@ async function generate(messages: any[]) {
         const streamer = new TextStreamer(tokenizer, {
             skip_prompt: true,
             callback_function: (text: string) => {
-                if (numTokens === 0) {
-                    startTime = performance.now();
-                }
+                if (numTokens === 0) startTime = performance.now();
                 numTokens++;
                 const tps = numTokens / ((performance.now() - startTime) / 1000);
                 self.postMessage({ type: "delta", text, tps });
@@ -111,13 +120,6 @@ async function generate(messages: any[]) {
 
 self.onmessage = async (e) => {
     const { type, data } = e.data;
-
-    switch (type) {
-        case "load":
-            await load();
-            break;
-        case "generate":
-            await generate(data);
-            break;
-    }
+    if (type === "load") await load();
+    if (type === "generate") await generate(data);
 };
