@@ -1,16 +1,27 @@
 import {
     AutoTokenizer,
-    AutoModelForCausalLM, // AutoModelForCausalLM should resolve to Qwen3_5ForCausalLM or similar
+    AutoModelForCausalLM,
     TextStreamer,
     env,
 } from "@huggingface/transformers";
 
-// CONFIGURE TRANSFORMERS.JS TO USE LOCAL ASSETS
-env.allowRemoteModels = false;
-env.allowLocalModels = true;
-env.localModelPath = '/models/'; // Absolute path relative to URL root
+// Detection of built/production environment
+// @ts-ignore - Vite will replace this at build time
+const IS_PROD = import.meta.env.MODE === 'production';
 
-const MODEL_ID = "qwen3.5-0.8b";
+// In production (GitHub Pages), we fetch from Hugging Face Hub directly
+// In development, we use the local files served from /models/
+const MODEL_ID = IS_PROD ? "onnx-community/Qwen3.5-0.8B-ONNX" : "qwen3.5-0.8b";
+
+// CONFIGURE TRANSFORMERS.JS
+if (IS_PROD) {
+    env.allowRemoteModels = true;
+    env.allowLocalModels = false; // Prevents looking in the 'dist' folder for weights on GitHub Pages
+} else {
+    env.allowRemoteModels = false;
+    env.allowLocalModels = true;
+    env.localModelPath = '/models/'; // Path relative to public root in dev
+}
 
 /** @type {AutoModelForCausalLM} */
 let model: any = null;
@@ -23,8 +34,12 @@ const progressCallback = (data: any) => {
 
 async function load() {
     try {
-        console.log("Worker: Loading Qwen 3.5 from project models...");
-        self.postMessage({ type: "progress", status: "init", message: "Loading local engine..." });
+        console.log(`Worker: Loading Qwen 3.5 (${IS_PROD ? 'Hub' : 'Local'})...`);
+        self.postMessage({ 
+            type: "progress", 
+            status: "init", 
+            message: IS_PROD ? "Fetching model from Cloud..." : "Loading project engine..." 
+        });
 
         if (!(navigator as any).gpu) {
             throw new Error("WebGPU is not supported by your browser in this context.");
@@ -36,14 +51,13 @@ async function load() {
         });
 
         console.log("Worker: Initializing model (WebGPU)...");
-        // We use AutoModelForCausalLM which is usually what the community ONNX weights target
         model = await AutoModelForCausalLM.from_pretrained(MODEL_ID, {
             device: "webgpu",
             dtype: "q4f16", 
             progress_callback: progressCallback,
         });
 
-        console.log("Worker: Local Qwen 3.5 ready!");
+        console.log("Worker: Qwen 3.5 ready!");
         self.postMessage({ type: "ready" });
     } catch (error: any) {
         console.error("Worker Error details:", error);
@@ -85,7 +99,7 @@ async function generate(messages: any[]) {
             ...input_ids,
             streamer,
             max_new_tokens: 1024,
-            do_sample: false, // Greedy search for faster performance
+            do_sample: false,
         });
 
         self.postMessage({ type: "done" });
