@@ -19,6 +19,10 @@ let currentContentEl: HTMLDivElement | null = null;
 let fullResponse = "";
 let isThinking = false;
 
+// --- Progress Tracking ---
+const progressMap = new Map<string, number>();
+let lastDisplayProgress = 0;
+
 // --- Three.js Setup ---
 const scene = new THREE.Scene();
 const cssScene = new THREE.Scene();
@@ -133,11 +137,29 @@ worker.onmessage = (e) => {
 
     switch (type) {
         case 'progress':
-            if (status === 'progress' && progress !== undefined) {
-                const p = Math.round(progress);
-                progressFill.style.width = `${p}%`;
-                loadingPercentage.innerText = `${p}%`;
-                loadingText.innerText = `Loading from project folder...`;
+            if (status === 'progress' && e.data.file) {
+                // Update progress for this specific file
+                progressMap.set(e.data.file, progress);
+                
+                // Calculate average progress across all files encountered so far
+                // We don't know the total files, but we know the ones we've started
+                let totalLoadedProgress = 0;
+                progressMap.forEach(v => totalLoadedProgress += v);
+                
+                // Assume 8 files total for Qwen 3.5 (from our manifest)
+                // This gives a much smoother overall feeling
+                const totalFiles = 8;
+                const globalProgress = Math.min(99, totalLoadedProgress / totalFiles);
+                
+                // Only move forward to avoid "jaggedy" backwards jumps
+                if (globalProgress > lastDisplayProgress) {
+                    lastDisplayProgress = globalProgress;
+                    const p = Math.round(globalProgress);
+                    progressFill.style.width = `${p}%`;
+                    loadingPercentage.innerText = `${p}%`;
+                }
+                
+                loadingText.innerText = `Synchronizing neural weights...`;
             } else if (status === 'init' || status === 'initiate') {
                 loadingText.innerText = message || "Initializing engine...";
             } else if (status === 'error') {

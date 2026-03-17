@@ -271,9 +271,16 @@ h1 span {
 #progress-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, var(--accent-secondary), var(--accent-color));
-  transition: width 0.3s ease;
-  box-shadow: 0 0 10px var(--accent-color);
+  background: linear-gradient(90deg, var(--accent-secondary), var(--accent-color), var(--accent-secondary));
+  background-size: 200% 100%;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 15px var(--accent-color);
+  animation: bar-glow 2s linear infinite;
+}
+
+@keyframes bar-glow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
 }
 
 #loading-text {
