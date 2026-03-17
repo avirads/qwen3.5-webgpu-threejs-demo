@@ -51,6 +51,7 @@ const statusEl = clone.querySelector('#status') as HTMLDivElement;
 const messagesEl = clone.querySelector('#messages') as HTMLDivElement;
 const inputEl = clone.querySelector('#prompt-input') as HTMLTextAreaElement;
 const sendBtn = clone.querySelector('#send-btn') as HTMLButtonElement;
+const clearBtn = clone.querySelector('#clear-btn') as HTMLButtonElement;
 const copyBtn = clone.querySelector('#copy-btn') as HTMLButtonElement;
 const downloadBtn = clone.querySelector('#download-btn') as HTMLButtonElement;
 
@@ -328,8 +329,26 @@ function handleDownload() {
     URL.revokeObjectURL(url);
 }
 
+function handleClear() {
+    if (chatHistory.length === 0) return;
+    
+    // Clear state
+    chatHistory.length = 0;
+    messagesEl.innerHTML = '';
+    
+    // Feedback
+    const originalStatus = statusEl.innerText;
+    statusEl.innerText = 'Memory Cleared';
+    statusEl.style.color = 'var(--accent-color)';
+    setTimeout(() => {
+        statusEl.innerText = originalStatus;
+        statusEl.style.color = '';
+    }, 2000);
+}
+
 // Event Listeners
 sendBtn.addEventListener('click', sendMessage);
+clearBtn.addEventListener('click', handleClear);
 copyBtn.addEventListener('click', handleCopy);
 downloadBtn.addEventListener('click', handleDownload);
 
