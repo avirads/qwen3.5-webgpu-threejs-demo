@@ -51,6 +51,8 @@ const statusEl = clone.querySelector('#status') as HTMLDivElement;
 const messagesEl = clone.querySelector('#messages') as HTMLDivElement;
 const inputEl = clone.querySelector('#prompt-input') as HTMLTextAreaElement;
 const sendBtn = clone.querySelector('#send-btn') as HTMLButtonElement;
+const copyBtn = clone.querySelector('#copy-btn') as HTMLButtonElement;
+const downloadBtn = clone.querySelector('#download-btn') as HTMLButtonElement;
 
 // --- Background Particles ---
 const particlesCount = 3000;
@@ -291,8 +293,45 @@ function appendMessage(role: string, text: string) {
     messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
+function getFormattedChat() {
+    return chatHistory.map(m => `[${m.role.toUpperCase()}]\n${m.content}\n`).join('\n---\n\n');
+}
+
+async function handleCopy() {
+    if (chatHistory.length === 0) return;
+    const text = getFormattedChat();
+    try {
+        await navigator.clipboard.writeText(text);
+        const originalStatus = statusEl.innerText;
+        statusEl.innerText = 'Copied to Clipboard!';
+        statusEl.style.color = 'var(--accent-color)';
+        setTimeout(() => {
+            statusEl.innerText = originalStatus;
+            statusEl.style.color = '';
+        }, 2000);
+    } catch (err) {
+        console.error('Failed to copy chat:', err);
+    }
+}
+
+function handleDownload() {
+    if (chatHistory.length === 0) return;
+    const text = getFormattedChat();
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `qwen-chat-${new Date().toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
 // Event Listeners
 sendBtn.addEventListener('click', sendMessage);
+copyBtn.addEventListener('click', handleCopy);
+downloadBtn.addEventListener('click', handleDownload);
 
 inputEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
