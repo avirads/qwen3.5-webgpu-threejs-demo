@@ -100,13 +100,13 @@ function animate(time: number) {
     const targetX = mouse.x * 100;
     const targetY = -mouse.y * 100;
 
-    camera.position.x += (targetX - camera.position.x) * 0.05;
-    camera.position.y += (targetY - camera.position.y) * 0.05;
+    particles.position.x += (targetX - particles.position.x) * 0.05;
+    particles.position.y += (targetY - particles.position.y) * 0.05;
+    camera.position.x = 0;
+    camera.position.y = 0;
     camera.lookAt(0, 0, 0);
 
-    // CSS Object rotation for depth feel
-    cssObject.rotation.y = mouse.x * 0.1;
-    cssObject.rotation.x = -mouse.y * 0.1;
+    // CSS Object (Chat Window) is now static as requested
 
     // Pulse effect when generating (only particles now)
     if (isGenerating) {
