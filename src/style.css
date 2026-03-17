@@ -44,7 +44,9 @@ body {
 /* 3D Panel Styles */
 .glass-panel {
   width: 900px;
+  max-width: 95vw;
   height: 700px;
+  max-height: 85vh;
   background: var(--glass-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -304,4 +306,44 @@ h1 span {
   font-family: 'JetBrains Mono', monospace;
   margin-top: 0.5rem;
   opacity: 0.6;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .glass-panel {
+    border-radius: 1.5rem;
+  }
+
+  header {
+    padding: 1.2rem;
+  }
+
+  h1 {
+    font-size: 1.1rem;
+  }
+
+  #chat-container {
+    padding: 1.2rem;
+    gap: 1rem;
+  }
+
+  .message {
+    font-size: 0.95rem;
+  }
+
+  #input-area {
+    padding: 1rem 1.2rem 1.5rem;
+  }
+
+  .input-wrapper {
+    padding: 0.4rem 0.4rem 0.4rem 1rem;
+  }
+
+  #prompt-input {
+    font-size: 0.9rem;
+  }
+
+  #loading-percentage {
+    font-size: 1.5rem;
+  }
 }

@@ -108,13 +108,11 @@ function animate(time: number) {
     cssObject.rotation.y = mouse.x * 0.1;
     cssObject.rotation.x = -mouse.y * 0.1;
 
-    // Pulse effect when generating
+    // Pulse effect when generating (only particles now)
     if (isGenerating) {
         particlesMaterial.size = 4 + Math.sin(time * 0.01) * 2;
-        cssObject.position.z = Math.sin(time * 0.005) * 20;
     } else {
         particlesMaterial.size = 4;
-        cssObject.position.z = 0;
     }
 
     renderer.render(scene, camera);
@@ -124,10 +122,21 @@ animate(0);
 
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
+    
+    // Adjust camera distance for mobile
+    if (window.innerWidth < 768) {
+        camera.position.z = 1200;
+    } else {
+        camera.position.z = 800;
+    }
+
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     cssRenderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+// Initial check for camera distance
+if (window.innerWidth < 768) camera.position.z = 1200;
 
 // --- Worker Communication ---
 const worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
